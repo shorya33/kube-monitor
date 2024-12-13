@@ -6,21 +6,21 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-// UploadFileToS3 uploads a file to the specified S3 bucket
-func UploadFileToS3(bucketName, key string, file *os.File) error {
-	// Load AWS configuration
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+// S3FileUploader handles file upload to S3
+func S3FileUploader(bucketName, key, region string, file io.Reader) error {
+	// Load AWS configuration with the provided region
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
 		return fmt.Errorf("unable to load AWS configuration: %w", err)
 	}
 
+	// Create an S3 client
 	s3Client := s3.NewFromConfig(cfg)
 
 	// Upload the file to S3
@@ -37,17 +37,17 @@ func UploadFileToS3(bucketName, key string, file *os.File) error {
 	return nil
 }
 
-// UploadHandler handles the file upload request
+// UploadHandler handles the file upload HTTP request
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		// Parse form data
-		err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+		// Parse form data (with a 10MB limit)
+		err := r.ParseMultipartForm(10 << 20)
 		if err != nil {
 			http.Error(w, "Unable to parse form data", http.StatusBadRequest)
 			return
 		}
 
-		// Get the file, bucket name, and region from the form
+		// Extract file and form values
 		file, _, err := r.FormFile("file")
 		if err != nil {
 			http.Error(w, "Unable to retrieve the file", http.StatusBadRequest)
@@ -67,50 +67,21 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Load AWS configuration with the provided region
-		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Unable to load AWS configuration for region %s: %v", region, err), http.StatusInternalServerError)
-			return
-		}
-
-		// Get the file name and upload to S3
+		// Get the file name to use as the S3 key
 		fileName := r.FormValue("fileName")
 		if fileName == "" {
 			http.Error(w, "File name is required", http.StatusBadRequest)
 			return
 		}
 
-		// Create a temporary file to store the uploaded file
-		tempFile, err := os.CreateTemp("", "uploaded-*")
-		if err != nil {
-			http.Error(w, "Unable to create temporary file", http.StatusInternalServerError)
-			return
-		}
-		defer os.Remove(tempFile.Name())
-
-		// Copy the uploaded file to the temporary file
-		_, err = io.Copy(tempFile, file)
-		if err != nil {
-			http.Error(w, "Failed to copy file", http.StatusInternalServerError)
-			return
-		}
-
-		// Close the temporary file after copying
-		err = tempFile.Close()
-		if err != nil {
-			http.Error(w, "Failed to close the temporary file", http.StatusInternalServerError)
-			return
-		}
-
 		// Upload the file to S3
-		err = UploadFileToS3(bucketName, fileName, tempFile)
+		err = S3FileUploader(bucketName, fileName, region, file)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Upload failed: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		// Respond with success message
+		// Respond with a success message
 		fmt.Fprintf(w, "File uploaded successfully to S3 bucket %s in region %s", bucketName, region)
 		return
 	}
