@@ -8,7 +8,7 @@ COPY go.mod go.sum ./
 RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 # Stage 2: Create a distroless image
-FROM scratch
+FROM scratch AS backend-distroless
 
 COPY --from=backend /app/main /
 
