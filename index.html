@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload to S3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 300px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .container h2 {
+            text-align: center;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .status {
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>S3 File Uploader</h2>
+        <form id="uploadForm">
+            <input type="text" id="bucketName" placeholder="Enter S3 Bucket Name" required>
+            <input type="text" id="region" placeholder="Enter AWS Region" required>
+            <input type="file" id="fileInput" required>
+            <button type="submit">Upload File</button>
+        </form>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const statusDiv = document.getElementById('status');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const bucketName = document.getElementById('bucketName').value;
+            const region = document.getElementById('region').value;
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!bucketName || !region || !file) {
+                statusDiv.textContent = "Please provide bucket name, region, and file.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("bucketName", bucketName);
+            formData.append("region", region);
+            formData.append("file", file);
+            formData.append("fileName", file.name);
+
+            statusDiv.textContent = "Uploading...";
+
+            fetch('http://backend-service:8080/upload', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.text())
+            .then(result => {
+                statusDiv.textContent = result;
+            })
+            .catch(error => {
+                statusDiv.textContent = `Error: ${error}`;
+            });
+        });
+    </script>
+</body>
+</html>
