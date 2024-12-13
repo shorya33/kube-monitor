@@ -43,14 +43,13 @@ jobs:
         # Clean up Docker container after testing
         docker stop $(docker ps -q) || true
         docker rm $(docker ps -a -q) || true
-    
-    - name: Tag Docker image
+        
+    - name: Tag Docker images
       run: |
-        docker tag frontend:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/frontend:${{ github.sha }}
-        docker tag backend:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/backend:${{ github.sha }}
+        docker tag frontend:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:frontend-${{ github.sha }}
+        docker tag backend:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:backend-${{ github.sha }}
 
-    # Push Docker image to ECR
-    - name: Push Docker image to ECR
+    - name: Push Docker images to ECR
       run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/frontend:${{ github.sha }}
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/backend:${{ github.sha }}
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:frontend-${{ github.sha }}
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:backend-${{ github.sha }}
