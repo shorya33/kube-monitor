@@ -74,8 +74,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		s3Client := s3.NewFromConfig(cfg)
-
 		// Get the file name and upload to S3
 		fileName := r.FormValue("fileName")
 		if fileName == "" {
