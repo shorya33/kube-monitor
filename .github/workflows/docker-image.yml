@@ -58,7 +58,7 @@ jobs:
 
     # Set up kubectl for EKS
     - name: Set up kubectl for EKS
-      uses: eks-actions/eks-kubectl-action@v1
+      uses: azure/setup-kubectl@v4
       with:
         cluster-name: ${{ secrets.EKS_CLUSTER_NAME }}
         region: ${{ secrets.AWS_REGION }}
