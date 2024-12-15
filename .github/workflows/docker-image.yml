@@ -62,8 +62,6 @@ jobs:
       with:
         cluster-name: ${{ secrets.EKS_CLUSTER_NAME }}
         region: ${{ secrets.AWS_REGION }}
-      run: | 
-        aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
 
     - name: Install Helm
       run: |
