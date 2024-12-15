@@ -70,10 +70,9 @@ jobs:
         sudo mv linux-amd64/helm /usr/local/bin/helm
         helm version
 
-    # Deploy to EKS using Helm
-    - name: Deploy to EKS using Helm
+    - name: Add Helm chart repository
       run: |
-        # Update Helm chart repositories
+        helm repo add stable https://charts.helm.sh/stable
         helm repo update
 
         # Deploy or upgrade the Helm chart
