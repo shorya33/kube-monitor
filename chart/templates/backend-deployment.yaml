@@ -12,12 +12,12 @@ spec:
       labels:
         app: backend
     spec:
-      serviceAccountName: {{ .Values.backend.serviceAccountName}}  
+      serviceAccountName: {{ .Values.backend.serviceAccountName }}  
       containers:
-      - name: backend
-        image: {{ .Values.backend.image }}
-        ports:
-        - containerPort: {{ .Values.backend.port }}
+        - name: backend
+          image: {{ .Values.backend.image }}
+          ports:
+            - containerPort: {{ .Values.backend.port }}
 
 ---
 
@@ -29,7 +29,7 @@ spec:
   selector:
     app: backend
   ports:
-  - protocol: TCP
-    port: {{ .Values.backend.port }}
-    targetPort: {{ .Values.backend.port }}
+    - protocol: TCP
+      port: {{ .Values.backend.port }}
+      targetPort: {{ .Values.backend.port }}
   type: ClusterIP
