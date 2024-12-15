@@ -1,13 +1,11 @@
-awsAccountId: "${{secrets.AWS_ACCOUNT_ID}}"
-
+awsAccountId: "{{ .Env.AWS_ACCOUNT_ID }}"
 backend:
-  image: "${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{secrets.AWS_REGION}}.amazonaws.com/monitor/repo:backend-{{ .Chart.Version }}"
+  image: "{{ .Env.AWS_ACCOUNT_ID }}.dkr.ecr.{{ .Env.AWS_REGION }}.amazonaws.com/monitor/repo:backend-{{ .Chart.Version }}"
   replicas: 2
   port: 8080
-  serviceAccountName: "{{ .Release.Name }}-backend-service-account"
 
 frontend:
-  image: "${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{secrets.AWS_REGION}}.amazonaws.com/monitor/repo:frontend-{{ .Chart.Version }}"
+  image: "{{ .Env.AWS_ACCOUNT_ID }}.dkr.ecr.{{ .Env.AWS_REGION }}.amazonaws.com/monitor/repo:frontend-{{ .Chart.Version }}"
   replicas: 2
   port: 80
 
