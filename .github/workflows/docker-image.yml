@@ -63,12 +63,16 @@ jobs:
         cluster-name: ${{ secrets.EKS_CLUSTER_NAME }}
         region: ${{ secrets.AWS_REGION }}
 
+    - name: Install Helm
+      run: |
+        curl https://get.helm.sh/helm-v3.11.0-linux-amd64.tar.gz -o helm-v3.11.0-linux-amd64.tar.gz
+        tar -zxvf helm-v3.11.0-linux-amd64.tar.gz
+        sudo mv linux-amd64/helm /usr/local/bin/helm
+        helm version
+
     # Deploy to EKS using Helm
     - name: Deploy to EKS using Helm
       run: |
-        # Install Helm if it's not installed
-        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3.sh | bash
-
         # Update Helm chart repositories
         helm repo update
 
