@@ -4,7 +4,7 @@ FROM golang:1.21 AS backend
 WORKDIR /app
 
 COPY . .
-COPY go.mod go.sum ./
+COPY go.mod ./
 RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 # Stage 2: Create a distroless image

@@ -6,14 +6,43 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+// Define Prometheus metrics
+var (
+	totalUploads = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "s3_file_uploads_total",
+			Help: "Total number of files uploaded to S3",
+		},
+		[]string{"bucket_name", "region"},
+	)
+
+	uploadDuration = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "s3_file_upload_duration_seconds",
+			Help:    "Duration of S3 file uploads in seconds",
+			Buckets: prometheus.DefBuckets,
+		},
+	)
+)
+
+func init() {
+	// Register Prometheus metrics
+	prometheus.MustRegister(totalUploads)
+	prometheus.MustRegister(uploadDuration)
+}
 
 // S3FileUploader handles file upload to S3
 func S3FileUploader(bucketName, key, region string, file io.Reader) error {
+	start := time.Now()
 	// Load AWS configuration with the provided region
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
@@ -33,6 +62,11 @@ func S3FileUploader(bucketName, key, region string, file io.Reader) error {
 	if err != nil {
 		return fmt.Errorf("failed to upload file to S3: %w", err)
 	}
+
+	// Record metrics
+	duration := time.Since(start).Seconds()
+	uploadDuration.Observe(duration)
+	totalUploads.WithLabelValues(bucketName, region).Inc()
 
 	return nil
 }
@@ -90,6 +124,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Prometheus metrics endpoint
+	http.Handle("/metrics", promhttp.Handler())
+
+	// File upload endpoint
 	http.HandleFunc("/upload", UploadHandler)
 
 	// Start the server on port 8080

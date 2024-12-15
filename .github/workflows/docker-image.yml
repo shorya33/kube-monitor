@@ -1,4 +1,4 @@
-name: Docker Publish to Docker 
+name: Docker Publish to Docker and Deploy to EKS
 
 on:
   push:
@@ -15,23 +15,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # Log in to ECR
+    # Log in to AWS and ECR
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-    
+
     - name: Log in to Amazon ECR
       run: |
         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-    # Build the Docker image
+    # Build the Docker images
     - name: Build Docker image
       run: |
-         docker build -t frontend:${{ github.sha }} --target frontend .
-         docker build -t backend:${{github.sha}} --target backend .
+        docker build -t frontend:${{ github.sha }} --target frontend .
+        docker build -t backend:${{ github.sha }} --target backend-distroless .
 
     # Test the Docker container before pushing
     - name: Run tests in Docker container
@@ -43,13 +43,41 @@ jobs:
         # Clean up Docker container after testing
         docker stop $(docker ps -q) || true
         docker rm $(docker ps -a -q) || true
-        
+
+    # Tag Docker images
     - name: Tag Docker images
       run: |
         docker tag frontend:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:frontend-${{ github.sha }}
         docker tag backend:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:backend-${{ github.sha }}
 
+    # Push Docker images to ECR
     - name: Push Docker images to ECR
       run: |
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:frontend-${{ github.sha }}
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:backend-${{ github.sha }}
+
+    # Set up kubectl for EKS
+    - name: Set up kubectl for EKS
+      uses: eks-actions/eks-kubectl-action@v1
+      with:
+        cluster-name: ${{ secrets.EKS_CLUSTER_NAME }}
+        region: ${{ secrets.AWS_REGION }}
+
+    # Deploy to EKS using Helm
+    - name: Deploy to EKS using Helm
+      run: |
+        # Install Helm if it's not installed
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3.sh | bash
+
+        # Update Helm chart repositories
+        helm repo update
+
+        # Deploy or upgrade the Helm chart
+        helm upgrade --install kube-monitor ./chart \
+          --set backend.image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:backend-${{ github.sha }} \
+          --set frontend.image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:frontend-${{ github.sha }}
+
+    # Verify the deployment (optional)
+    - name: Verify deployment
+      run: |
+        kubectl get pods
