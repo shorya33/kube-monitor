@@ -87,8 +87,10 @@ jobs:
 
         # Deploy or upgrade the Helm chart
         helm upgrade --install kube-monitor ./chart \
+          --namespace kube \
           --set backend.image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:backend-${{ github.sha }} \
           --set frontend.image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/monitor/repo:frontend-${{ github.sha }}
+
 
     # Verify the deployment (optional)
     - name: Verify deployment
